@@ -1,4 +1,5 @@
 "use client";
+
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -14,7 +15,6 @@ export default function Navbar() {
 
     loadUser();
 
-    // Listen for login/logout updates
     const { data: listener } = supabase.auth.onAuthStateChange(() => {
       loadUser();
     });
@@ -37,7 +37,7 @@ export default function Navbar() {
       {/* Right Side */}
       <div>
         {!user ? (
-          // If NOT logged in — show login/signup button
+          // NOT LOGGED IN — show login button
           <Link
             href="/login"
             className="bg-[#d6d9d0] px-6 py-3 rounded-full text-[#5d6551] font-medium"
@@ -45,18 +45,28 @@ export default function Navbar() {
             Log in / Sign Up
           </Link>
         ) : (
-          // If logged in — show profile avatar + dropdown
+          // LOGGED IN — show profile dropdown
           <div className="relative group">
-            <div className="w-12 h-12 bg-[#8b9275] text-white rounded-full flex items-center justify-center cursor-pointer text-lg">
+            {/* Avatar */}
+            <div className="w-12 h-12 rounded-full bg-[#8b9275] text-white flex items-center justify-center cursor-pointer text-lg">
               {user.user_metadata.fullname
                 ? user.user_metadata.fullname.charAt(0)
                 : "U"}
             </div>
 
-            {/* Dropdown menu */}
-            <div className="absolute right-0 mt-3 bg-white shadow-lg rounded-xl p-4 w-48 hidden group-hover:block">
-              <p className="font-semibold">{user.user_metadata.fullname}</p>
-              <p className="text-sm text-gray-600 mb-3">{user.email}</p>
+            {/* Dropdown */}
+            <div
+              className="
+                absolute right-0 mt-3 w-48 bg-white rounded-xl shadow-lg p-4
+                opacity-0 pointer-events-none
+                group-hover:opacity-100 group-hover:pointer-events-auto
+                transition-opacity duration-150
+              "
+            >
+              <p className="font-semibold">
+                {user.user_metadata.fullname || "User"}
+              </p>
+              <p className="text-sm text-gray-500 mb-3">{user.email}</p>
 
               <Link
                 href="/profile"

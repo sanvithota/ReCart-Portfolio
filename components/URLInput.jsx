@@ -7,10 +7,22 @@ export default function URLInput() {
   const [url, setUrl] = useState("");
   const router = useRouter();
 
-  const handleSubmit = () => {
-    if (!url.trim()) return;
-    router.push(`/browse?url=${encodeURIComponent(url)}`);
-  };
+  async function handleSearch() {
+    if (!url) return;
+
+    const res = await fetch("/api/search", {
+      method: "POST",
+      body: JSON.stringify({ query: url }),
+    });
+
+    const data = await res.json();
+
+    router.push(
+      `/browse?results=${encodeURIComponent(
+        JSON.stringify(data.products)
+      )}`
+    );
+  }
 
   return (
     <div className="flex bg-white rounded-full shadow-md overflow-hidden">
@@ -18,14 +30,14 @@ export default function URLInput() {
 
       <input
         type="text"
-        placeholder="https://www.pacsun.com/john-galt/..."
+        placeholder="https://www.example.com/product..."
         value={url}
         onChange={(e) => setUrl(e.target.value)}
         className="flex-1 px-2 outline-none text-lg text-[#555]"
       />
 
       <button
-        onClick={handleSubmit}
+        onClick={handleSearch}
         className="bg-[#8b9275] px-6 text-white text-2xl hover:bg-[#798062]"
       >
         →

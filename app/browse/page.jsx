@@ -8,85 +8,30 @@ import ProductCard from "@/components/ProductCard";
 import SectionHeader from "@/components/SectionHeader";
 import SizeFilter from "@/components/SizeFilter";
 
-// TEMP DEMO DATA — replace with scraped data later
-const items = [
-  {
-    id: 1,
-    title: "John Galt Erica Boston Crew Neck Sweatshirt",
-    image:
-      "https://i.ebayimg.com/images/g/3kMAAOSw~/s-l1600.jpg",
-    platform: "eBay",
-    size: "M",
-    quality: "Excellent",
-    price: 35,
-    exact: true,
-  },
-  {
-    id: 2,
-    title: "Brandy Melville Women's Grey and Green Hoodie",
-    image:
-      "https://i.ebayimg.com/images/g/AAAAA/s-l500.jpg",
-    platform: "depop",
-    size: "L",
-    quality: "Good",
-    price: 28,
-    exact: true,
-  },
-  {
-    id: 3,
-    title: "Brandy Melville Women's Grey and Cream Sweatshirt",
-    image:
-      "https://i.ebayimg.com/images/g/BBBBB/s-l500.jpg",
-    platform: "depop",
-    size: "S",
-    quality: "Fair",
-    price: 22,
-    exact: true,
-  },
-  {
-    id: 4,
-    title: "Brandy Melville Women's Cream and Green Sweatshirt",
-    image:
-      "https://i.ebayimg.com/images/g/CCCCCC/s-l500.jpg",
-    platform: "depop",
-    size: "M",
-    quality: "Excellent",
-    price: 30,
-    exact: false,
-  },
-  {
-    id: 5,
-    title: "PacSun Boston Tan Sweater",
-    image:
-      "https://i.ebayimg.com/images/g/DDDDD/s-l500.jpg",
-    platform: "poshmark",
-    size: "L",
-    quality: "Good",
-    price: 27,
-    exact: false,
-  },
-  {
-    id: 6,
-    title: "Brandy Melville Gray Boston Sweater",
-    image:
-      "https://i.ebayimg.com/images/g/EEEEE/s-l500.jpg",
-    platform: "poshmark",
-    size: "XL",
-    quality: "Fair",
-    price: 24,
-    exact: false,
-  },
-];
-
 export default function Browse() {
   const params = useSearchParams();
-  const productUrl = params.get("url");
 
+  // 1. REAL search results passed from URL
+  const results = JSON.parse(params.get("results") || "[]");
+
+  // 2. Convert API results into UI-friendly items
+  const items = results.map((item, index) => ({
+    id: index,
+    title: item.title,
+    image: item.thumbnail,
+    platform: item.source,
+    size: "M", // temporary until we add size extraction logic
+    quality: "Good", // temporary (SerpAPI does not include condition)
+    price: parseInt(item.price?.replace(/[^0-9]/g, "")) || 20,
+    exact: true, // placeholder — will upgrade later
+  }));
+
+  // ========== FILTER STATE ==========
   const [sizes, setSizes] = useState([]);
-  const [maxPrice, setMaxPrice] = useState(null);
+  const [maxPrice, setMaxPrice] = useState(60);
   const [quality, setQuality] = useState(null);
 
-  // CLIENT-SIDE FILTERING
+  // ========== FILTER LOGIC ==========
   const filtered = items.filter((item) => {
     if (sizes.length > 0 && !sizes.includes(item.size)) return false;
     if (maxPrice !== null && item.price > maxPrice) return false;
@@ -99,14 +44,15 @@ export default function Browse() {
 
   return (
     <main className="min-h-screen bg-[#e9e3d4]">
-      <Navbar user="Jane Doe" />
+      <Navbar />
 
       <div className="px-20 mt-10">
+        {/* TOP SEARCH BAR */}
         <div className="flex justify-center mb-8">
           <div className="flex bg-white rounded-full shadow-md overflow-hidden w-[600px]">
             <div className="px-5 py-3 text-xl text-[#6c745f]">+</div>
             <input
-              value={productUrl || ""}
+              value={params.get("query") || ""}
               readOnly
               className="flex-1 px-2 outline-none text-lg"
             />
@@ -114,7 +60,7 @@ export default function Browse() {
           </div>
         </div>
 
-        {/* FILTERS + MAIN PRODUCT CARD */}
+        {/* FILTERS + MAIN PRODUCT HEADER */}
         <div className="flex gap-8">
           {/* FILTERS */}
           <div className="flex flex-col gap-4">
@@ -134,14 +80,14 @@ export default function Browse() {
               </p>
               <input
                 type="range"
-                min="10"
-                max="60"
-                value={maxPrice || 60}
+                min="5"
+                max="200"
+                value={maxPrice}
                 onChange={(e) => setMaxPrice(Number(e.target.value))}
                 className="mt-3 w-full"
               />
               <p className="mt-2 text-sm text-[#5d6551]">
-                Max: ${maxPrice || 60}
+                Max: ${maxPrice}
               </p>
             </div>
 
@@ -172,19 +118,21 @@ export default function Browse() {
             </div>
           </div>
 
-          {/* MAIN PRODUCT DISPLAY */}
+          {/* MAIN PRODUCT HEADER */}
           <div className="flex-1">
             <div className="bg-[#d2b19c] px-6 py-5 rounded-xl shadow-sm w-[500px]">
               <div className="flex gap-5">
                 <img
-                  src="https://images.pacsun.com/is/image/Pacsun/0380462000080NEWSTONE?..."
+                  src={items[0]?.image || ""}
                   className="w-40 h-40 rounded-xl object-cover"
                 />
                 <div>
                   <h3 className="text-xl font-semibold text-[#5d5148]">
-                    John Galt Boston Erica Crew Neck Sweatshirt
+                    {items[0]?.title || "Search Results"}
                   </h3>
-                  <p className="text-[#5d5148] mt-2">200 results</p>
+                  <p className="text-[#5d5148] mt-2">
+                    {items.length} results found
+                  </p>
                 </div>
               </div>
             </div>
