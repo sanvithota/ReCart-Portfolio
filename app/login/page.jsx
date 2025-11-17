@@ -1,6 +1,35 @@
+"use client";
+
 import Navbar from "@/components/Navbar";
+import { supabase } from "@/lib/supabaseClient";
+import { useState } from "react";
 
 export default function LoginPage() {
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    const formData = new FormData(e.target);
+    const email = formData.get("email");
+    const password = formData.get("password");
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+    } else {
+      window.location.href = "/"; // redirect to home
+    }
+  }
+
   return (
     <main className="min-h-screen bg-[#e9e3d4]">
       <Navbar />
@@ -15,25 +44,33 @@ export default function LoginPage() {
             Log in to continue shopping sustainably
           </p>
 
-          {/* FORM */}
-          <form className="flex flex-col gap-4">
+          {/* FIXED FORM */}
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <input
+              name="email"
               type="email"
               placeholder="Email Address"
+              required
               className="bg-[#d6d9d0] text-[#5d6551] px-4 py-3 rounded-xl outline-none text-lg"
             />
 
             <input
+              name="password"
               type="password"
               placeholder="Password"
+              required
               className="bg-[#d6d9d0] text-[#5d6551] px-4 py-3 rounded-xl outline-none text-lg"
             />
+
+            {error && (
+              <p className="text-red-700 text-center font-medium">{error}</p>
+            )}
 
             <button
               type="submit"
               className="mt-4 bg-[#8b9275] text-white text-xl py-3 rounded-xl hover:bg-[#798062] transition"
             >
-              Log In
+              {loading ? "Logging in..." : "Log In"}
             </button>
           </form>
 
