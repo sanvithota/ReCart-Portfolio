@@ -42,49 +42,52 @@ export default function Navbar() {
             Log in / Sign Up
           </Link>
         ) : (
-          // FIXED DROPDOWN WRAPPER
-          <div className="relative inline-block group">
-            {/* Avatar */}
-            <div className="w-12 h-12 rounded-full bg-[#8b9275] text-white flex items-center justify-center cursor-pointer text-lg select-none">
-              {user.user_metadata.fullname
-                ? user.user_metadata.fullname.charAt(0)
-                : "U"}
-            </div>
+          /** FULLY STABLE HOVER DROPDOWN **/
+          <div className="relative inline-block">
+            {/* HOVER AREA = avatar + dropdown */}
+            <div className="group inline-block">
+              
+              {/* Avatar */}
+              <div className="w-12 h-12 rounded-full bg-[#8b9275] text-white flex items-center justify-center cursor-pointer text-lg select-none">
+                {user.user_metadata.fullname
+                  ? user.user_metadata.fullname.charAt(0)
+                  : "U"}
+              </div>
 
-            {/* Dropdown */}
-            <div
-              className="
-                absolute right-0 mt-3 w-48 bg-white rounded-xl shadow-lg p-4 z-50
-                opacity-0 translate-y-2 pointer-events-none
-                group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto
-                transition-all duration-200
-              "
-            >
-              <p className="font-semibold">
-                {user.user_metadata.fullname || "User"}
-              </p>
-              <p className="text-sm text-gray-500 mb-3">{user.email}</p>
-
-              <Link
-                href="/profile"
-                className="block py-1 text-[#5d6551] hover:underline"
+              {/* Dropdown */}
+              <div
+                className="
+                  absolute right-0 mt-3 w-48 bg-white rounded-xl shadow-lg p-4 z-50
+                  opacity-0 invisible transform transition-all duration-200
+                  group-hover:opacity-100 group-hover:visible group-hover:translate-y-1
+                "
               >
-                Profile
-              </Link>
+                <p className="font-semibold">
+                  {user.user_metadata.fullname || "User"}
+                </p>
+                <p className="text-sm text-gray-500 mb-3">{user.email}</p>
 
-              <Link
-                href="/settings"
-                className="block py-1 text-[#5d6551] hover:underline"
-              >
-                Settings
-              </Link>
+                <Link
+                  href="/profile"
+                  className="block py-1 text-[#5d6551] hover:underline"
+                >
+                  Profile
+                </Link>
 
-              <button
-                onClick={handleLogout}
-                className="text-left w-full mt-2 text-red-600 hover:underline"
-              >
-                Log out
-              </button>
+                <Link
+                  href="/settings"
+                  className="block py-1 text-[#5d6551] hover:underline"
+                >
+                  Settings
+                </Link>
+
+                <button
+                  onClick={handleLogout}
+                  className="text-left w-full mt-2 text-red-600 hover:underline"
+                >
+                  Log out
+                </button>
+              </div>
             </div>
           </div>
         )}
