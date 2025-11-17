@@ -29,15 +29,12 @@ export default function Navbar() {
 
   return (
     <nav className="flex justify-between items-center px-10 py-5 bg-[#e9e3d4] shadow-sm">
-      {/* Logo */}
       <Link href="/" className="text-3xl font-bold text-[#5d6551]">
         ReCart
       </Link>
 
-      {/* Right Side */}
       <div>
         {!user ? (
-          // NOT LOGGED IN — show login button
           <Link
             href="/login"
             className="bg-[#d6d9d0] px-6 py-3 rounded-full text-[#5d6551] font-medium"
@@ -45,10 +42,10 @@ export default function Navbar() {
             Log in / Sign Up
           </Link>
         ) : (
-          // LOGGED IN — show profile dropdown
-          <div className="relative group">
+          // FIXED DROPDOWN WRAPPER
+          <div className="relative inline-block group">
             {/* Avatar */}
-            <div className="w-12 h-12 rounded-full bg-[#8b9275] text-white flex items-center justify-center cursor-pointer text-lg">
+            <div className="w-12 h-12 rounded-full bg-[#8b9275] text-white flex items-center justify-center cursor-pointer text-lg select-none">
               {user.user_metadata.fullname
                 ? user.user_metadata.fullname.charAt(0)
                 : "U"}
@@ -57,10 +54,10 @@ export default function Navbar() {
             {/* Dropdown */}
             <div
               className="
-                absolute right-0 mt-3 w-48 bg-white rounded-xl shadow-lg p-4
-                opacity-0 pointer-events-none
-                group-hover:opacity-100 group-hover:pointer-events-auto
-                transition-opacity duration-150
+                absolute right-0 mt-3 w-48 bg-white rounded-xl shadow-lg p-4 z-50
+                opacity-0 translate-y-2 pointer-events-none
+                group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto
+                transition-all duration-200
               "
             >
               <p className="font-semibold">
