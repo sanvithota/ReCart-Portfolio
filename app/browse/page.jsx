@@ -15,17 +15,23 @@ export default function Browse() {
   const results = JSON.parse(params.get("results") || "[]");
 
   // --- Convert API format to UI format ---
-  const items = results.map((item, index) => ({
-    id: index,
-    title: item.title,
-    image: item.thumbnail,
-    platform: item.source,
-    size: "M",
-    quality: "Good",
-    price: parseInt(item.price?.replace(/[^0-9]/g, "")) || 20,
-    link: item.link,
-    exact: true,
-  }));
+  const items = results.map((item, index) => {
+    // Extract a float like 45.00 from "$45.00"
+    const match = item.price ? item.price.match(/[\d,.]+/) : null;
+    const priceString = match ? match[0] : "0";
+
+    return {
+      id: index,
+      title: item.title,
+      image: item.thumbnail,
+      platform: item.source,
+      size: "M",
+      quality: "Good",
+      price: parseFloat(priceString.replace(/,/g, "")) || 0,
+      link: item.link,
+      exact: true,
+    };
+  });
 
   // --- FILTER STATE ---
   const [sizes, setSizes] = useState([]);
@@ -35,8 +41,10 @@ export default function Browse() {
   // --- FILTERING LOGIC ---
   const filtered = items.filter((item) => {
     if (sizes.length > 0 && !sizes.includes(item.size)) return false;
-    if (item.price > maxPrice) return false;
     if (quality && item.quality !== quality) return false;
+
+    // Do NOT apply price filter unless user changed it
+    if (maxPrice !== 200 && item.price > maxPrice) return false;
     return true;
   });
 
