@@ -6,23 +6,20 @@ import { useState } from "react";
 export default function URLInput() {
   const [url, setUrl] = useState("");
   const router = useRouter();
-
-  async function handleSearch() {
-    if (!url) return;
-
+  
+  async function handleSubmit() {
+    if (!url.trim()) return;
+  
     const res = await fetch("/api/search", {
       method: "POST",
       body: JSON.stringify({ query: url }),
     });
-
+  
     const data = await res.json();
-
-    router.push(
-      `/browse?results=${encodeURIComponent(
-        JSON.stringify(data.products)
-      )}`
-    );
+  
+    router.push(`/browse?results=${encodeURIComponent(JSON.stringify(data.products))}&query=${url}`);
   }
+  
 
   return (
     <div className="flex bg-white rounded-full shadow-md overflow-hidden">
@@ -37,7 +34,7 @@ export default function URLInput() {
       />
 
       <button
-        onClick={handleSearch}
+        onClick={handleSubmit}
         className="bg-[#8b9275] px-6 text-white text-2xl hover:bg-[#798062]"
       >
         →
