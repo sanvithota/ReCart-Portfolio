@@ -8,16 +8,25 @@ export default function URLInput() {
   const router = useRouter();
   
   async function handleSubmit() {
-    if (!url.trim()) return;
+    const trimmed = url.trim();
+    if (!trimmed) return;
   
     const res = await fetch("/api/search", {
       method: "POST",
-      body: JSON.stringify({ query: url }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query: trimmed }),
     });
   
+    if (!res.ok) {
+      console.error("Search failed", await res.text());
+      return;
+    }
+
     const data = await res.json();
+    const resultsParam = encodeURIComponent(JSON.stringify(data.products));
+    const queryParam = encodeURIComponent(trimmed);
   
-    router.push(`/browse?results=${encodeURIComponent(JSON.stringify(data.products))}&query=${url}`);
+    router.push(`/browse?results=${resultsParam}&query=${queryParam}`);
   }
   
 
