@@ -167,17 +167,35 @@ export async function POST(req) {
 
     console.log("🧺 total raw results:", allResults.length);
 
+    // 🔁 DEDUPE BY URL (strip query params so tracking doesn't cause dupes)
+    const seen = new Set();
+    const dedupedResults = [];
+
+    for (const r of allResults) {
+      if (!r.link) continue;
+
+      // normalize: lower-case + drop query string
+      const key = r.link.split("?")[0].toLowerCase();
+
+      if (seen.has(key)) continue;
+      seen.add(key);
+      dedupedResults.push(r);
+    }
+
+    console.log("🧺 after dedupe:", dedupedResults.length);
+
     // 2) Enrich only the top few results from their individual pages
-    const MAX_ENRICH = 15;
-    const toEnrich = allResults.slice(0, MAX_ENRICH);
-    const rest = allResults.slice(MAX_ENRICH);
+    const MAX_ENRICH = 8;
+    const toEnrich = dedupedResults.slice(0, MAX_ENRICH);
+    const rest = dedupedResults.slice(MAX_ENRICH);
 
     const enrichedTop = await Promise.all(
       toEnrich.map((listing) => enrichListingFromPage(listing))
     );
 
-    // remove nulls (out-of-stock)
+    // remove nulls (out-of-stock) from enriched part
     const mergedResults = [...enrichedTop.filter(Boolean), ...rest];
+
 
 
     // 3) Mark exact vs similar

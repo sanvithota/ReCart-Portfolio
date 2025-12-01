@@ -17,7 +17,7 @@ export default function ProductCard({ item }) {
       href={item.link}
       target="_blank"
       rel="noopener noreferrer"
-      className="block bg-white rounded-xl shadow p-3 hover:shadow-lg transition"
+      className="block bg-[#D7D9D0] rounded-xl shadow p-3 hover:shadow-lg transition"
     >
       <img
         src={item.image}
