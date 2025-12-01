@@ -41,9 +41,12 @@ async function enrichListingFromPage(listing) {
 
     let image = listing.thumbnail || null;
     let price = listing.price || null;
+    let isOutOfStock = false;
 
     // Look for JSON-LD: <script type="application/ld+json"> { "@type": "Product", ... }
     $('script[type="application/ld+json"]').each((_, el) => {
+      if (isOutOfStock) return false; // stop scanning if we already know
+
       try {
         const jsonText = $(el).contents().text();
         if (!jsonText) return;
@@ -52,7 +55,25 @@ async function enrichListingFromPage(listing) {
         const arr = Array.isArray(parsed) ? parsed : [parsed];
 
         for (const obj of arr) {
-          if (obj && obj["@type"] === "Product") {
+          if (!obj) continue;
+
+          // --- 🔎 availability check (Out of Stock) ---
+          const availability =
+            obj?.offers?.availability ||
+            obj?.offers?.itemAvailability ||
+            obj?.availability ||
+            obj?.itemAvailability;
+
+          if (
+            typeof availability === "string" &&
+            availability.toLowerCase().includes("outofstock")
+          ) {
+            isOutOfStock = true;
+            break; // break out of the for...of
+          }
+
+          // --- existing Product parsing ---
+          if (obj["@type"] === "Product") {
             // Image
             if (!image && obj.image) {
               if (Array.isArray(obj.image)) {
@@ -78,6 +99,12 @@ async function enrichListingFromPage(listing) {
       }
     });
 
+    // If JSON-LD says it's out of stock, drop this listing
+    if (isOutOfStock) {
+      console.log("🚫 Skipping out-of-stock listing:", listing.link);
+      return null;
+    }
+
     return {
       ...listing,
       thumbnail: image || listing.thumbnail,
@@ -88,6 +115,7 @@ async function enrichListingFromPage(listing) {
     return listing;
   }
 }
+
 
 export async function POST(req) {
   try {
@@ -140,7 +168,7 @@ export async function POST(req) {
     console.log("🧺 total raw results:", allResults.length);
 
     // 2) Enrich only the top few results from their individual pages
-    const MAX_ENRICH = 8;
+    const MAX_ENRICH = 15;
     const toEnrich = allResults.slice(0, MAX_ENRICH);
     const rest = allResults.slice(MAX_ENRICH);
 
@@ -148,7 +176,9 @@ export async function POST(req) {
       toEnrich.map((listing) => enrichListingFromPage(listing))
     );
 
-    const mergedResults = [...enrichedTop, ...rest];
+    // remove nulls (out-of-stock)
+    const mergedResults = [...enrichedTop.filter(Boolean), ...rest];
+
 
     // 3) Mark exact vs similar
     const coreTokens = coreForMatching
@@ -156,23 +186,32 @@ export async function POST(req) {
       .split(/\s+/)
       .filter(Boolean);
 
-    const products = mergedResults.map((p, index) => {
-      const titleLower = (p.title || "").toLowerCase();
-      const isExact =
-        coreTokens.length > 0
-          ? coreTokens.every((tok) => titleLower.includes(tok))
-          : true;
 
-      return {
-        id: index,
-        title: p.title,
-        price: p.price,
-        thumbnail: p.thumbnail,
-        link: p.link,
-        source: p.source,
-        exact: isExact,
-      };
-    });
+    const products = mergedResults.map((p, index) => {
+    const titleLower = (p.title || "").toLowerCase();
+
+    const matchCount = coreTokens.filter((tok) =>
+      titleLower.includes(tok)
+    ).length;
+
+    const ratio = coreTokens.length > 0
+      ? matchCount / coreTokens.length
+      : 1;
+
+    const isExact = ratio >= 0.6; // tweak 0.6 → 0.7, 0.8, etc.
+
+    return {
+      id: index,
+      title: p.title,
+      price: p.price,
+      thumbnail: p.thumbnail,
+      link: p.link,
+      source: p.source,
+      exact: isExact,
+    };
+  });
+
+
 
     return NextResponse.json({
       products,
