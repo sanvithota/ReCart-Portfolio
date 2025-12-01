@@ -13,23 +13,24 @@ export default function Browse() {
 
   // --- RAW RESULTS FROM API ---
   const results = JSON.parse(params.get("results") || "[]");
+  const headerTitle = params.get("title") || "Search results";
 
   // --- Convert API format to UI format ---
   const items = results.map((item, index) => {
     // Extract a float like 45.00 from "$45.00"
-    const match = item.price ? item.price.match(/[\d,.]+/) : null;
+    const match = item.price ? String(item.price).match(/[\d,.]+/) : null;
     const priceString = match ? match[0] : "0";
 
     return {
       id: index,
       title: item.title,
-      image: item.thumbnail,
+      image: item.thumbnail,           // from googleSearch
       platform: item.source,
       size: "M",
       quality: "Good",
       price: parseFloat(priceString.replace(/,/g, "")) || 0,
       link: item.link,
-      exact: true,
+      exact: item.exact ?? true,       // use backend exact flag if present
     };
   });
 
@@ -40,13 +41,30 @@ export default function Browse() {
 
   // --- FILTERING LOGIC ---
   const filtered = items.filter((item) => {
-    if (sizes.length > 0 && !sizes.includes(item.size)) return false;
-    if (quality && item.quality !== quality) return false;
+  // 🚫 Hide items where we couldn't get a real price (0 or NaN)
+  if (item.price <= 0) return false;
 
-    // Do NOT apply price filter unless user changed it
-    if (maxPrice !== 200 && item.price > maxPrice) return false;
-    return true;
-  });
+  // 🚫 Hide obviously sold-out items based on title text
+  const title = (item.title || "").toLowerCase();
+  if (
+    title.includes("sold out") ||
+    title.includes("sold-out") ||
+    title.includes("sold") ||
+    title.includes("out of stock")
+  ) {
+    return false;
+  }
+
+  if (sizes.length > 0 && !sizes.includes(item.size)) return false;
+  if (quality && item.quality !== quality) return false;
+
+  // Do NOT apply price filter unless user changed it
+  if (maxPrice !== 200 && item.price > maxPrice) return false;
+
+  return true;
+});
+
+
 
   const exactMatches = filtered.filter((i) => i.exact);
   const similarItems = filtered.filter((i) => !i.exact);
@@ -138,7 +156,7 @@ export default function Browse() {
                 )}
                 <div>
                   <h3 className="text-xl font-semibold text-[#5d5148]">
-                    {items[0]?.title || "Search Results"}
+                    {headerTitle}
                   </h3>
                   <p className="text-[#5d5148] mt-2">
                     {filtered.length} results found

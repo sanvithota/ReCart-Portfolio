@@ -6,29 +6,25 @@ import { useState } from "react";
 export default function URLInput() {
   const [url, setUrl] = useState("");
   const router = useRouter();
-  
+
   async function handleSubmit() {
-    const trimmed = url.trim();
-    if (!trimmed) return;
-  
+    if (!url.trim()) return;
+
     const res = await fetch("/api/search", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query: trimmed }),
+      body: JSON.stringify({ query: url }),
     });
-  
-    if (!res.ok) {
-      console.error("Search failed", await res.text());
-      return;
-    }
 
     const data = await res.json();
-    const resultsParam = encodeURIComponent(JSON.stringify(data.products));
-    const queryParam = encodeURIComponent(trimmed);
-  
-    router.push(`/browse?results=${resultsParam}&query=${queryParam}`);
+
+    router.push(
+      `/browse?results=${encodeURIComponent(
+        JSON.stringify(data.products || [])
+      )}&query=${encodeURIComponent(url)}&title=${encodeURIComponent(
+        data.title || ""
+      )}`
+    );
   }
-  
 
   return (
     <div className="flex bg-white rounded-full shadow-md overflow-hidden">
