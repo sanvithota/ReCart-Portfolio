@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Navbar from "@/components/Navbar";
+import Image from "next/image";
 
 export default function ImpactPage() {
   return (
@@ -56,13 +56,15 @@ export default function ImpactPage() {
             </p>
           </div>
 
+          <div className="flex justify-end">
           <Image
-            src="/impact-illustration.png"
-            width={500}
-            height={400}
-            alt="Impact illustration"
-            className="rounded-xl shadow-md"
-          />
+      src="/impact-illustration.png"
+      width={300}
+      height={200}
+      alt="Impact illustration"
+      className="rounded-xl shadow-md"
+    />
+</div>
         </div>
       </section>
       {/* Disclaimer */}

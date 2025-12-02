@@ -1,26 +1,39 @@
+import Navbar from "@/components/Navbar";
 import Image from "next/image";
 import Link from "next/link";
-import Navbar from "@/components/Navbar";
 
 export default function BlogPage() {
   const posts = [
-    {
-      title: "We Analyzed 13 Cloud Couch Dupes So You Don’t Have To",
-      desc: "Comparing 13 look-alikes—from $400 bargains to plush down-blend sectionals.",
-      image: "/blog/cloud-couch.jpg",
-      read: "8 MIN READ",
-      slug: "cloud-couch-dupe",
-    },
+    
     {
       title: "How to Build a Capsule Wardrobe for Under $200",
-      image: "/blog/capsule.jpg",
+      desc: "A complete breakdown of how to build a timeless, minimalist wardrobe without overspending.",
+      image: "/blog/capsule.png",
+      read: "8 MIN READ",
       slug: "capsule-wardrobe",
     },
     {
       title: "The Best Places to Thrift Online in 2025",
+      desc: "From Depop to Poshmark, here are this year's top platforms for scoring second-hand gems.",
       image: "/blog/thrift-online.jpg",
+      read: "7 MIN READ",
       slug: "thrift-online",
     },
+    {
+      title: "The Science of Dupe Hunting: Spotting High-Quality Second-Hand Finds",
+      desc: "How resellers evaluate fabric, stitching, and wear — and how you can too.",
+      image: "/blog/dupe-hunting.jpg",
+      read: "6 MIN READ",
+      slug: "dupe-hunting-guide",
+    },
+    {
+      title: "Inside the Resale Boom: Why Gen Z Is Reshaping the Market",
+      desc: "A deep dive into the culture, values, and tech trends driving a global resale surge.",
+      image: "/blog/gen-z-resale.jpg",
+      read: "9 MIN READ",
+      slug: "gen-z-resale",
+    },
+
   ];
 
   return (

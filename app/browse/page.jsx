@@ -156,6 +156,13 @@ export default function Browse() {
                 Clear All Filters
               </button>
             )}
+
+            {/* Debug info */}
+            <div className="bg-[#d6d9d0] p-3 rounded-xl shadow-sm text-xs text-[#5d6551]">
+              <p className="font-semibold mb-1">Debug Info:</p>
+              <p>{items.filter(i => i.sizes.length > 0).length} items have sizes</p>
+              <p>{items.filter(i => i.quality).length} items have condition</p>
+            </div>
           </div>
 
           {/* RIGHT CONTENT */}
