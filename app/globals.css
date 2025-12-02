@@ -22,5 +22,40 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: Nunito, sans-serif;
+}
+
+/* --- ANIMATIONS --- */
+@keyframes recart-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes recart-fade-in-slow {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Put custom classes in the utilities layer so they
+   sit nicely next to Tailwind’s own utilities */
+@layer utilities {
+  .animate-fade-in {
+    animation: recart-fade-in 0.7s ease-out both;
+  }
+
+  .animate-fade-in-slow {
+    animation: recart-fade-in-slow 1s ease-out both;
+  }
 }

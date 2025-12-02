@@ -3,6 +3,7 @@
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 export default function Navbar() {
   const [user, setUser] = useState(null);
@@ -29,26 +30,61 @@ export default function Navbar() {
 
   return (
     <nav className="flex justify-between items-center px-10 py-5 bg-[#e9e3d4] shadow-sm">
-      <Link href="/" className="text-3xl font-bold text-[#5d6551]">
-        ReCart
+
+      {/* LOGO */}
+      <Link href="/" className="flex items-center gap-3 group cursor-pointer">
+        <Image 
+          src="/recartlogo.png"
+          alt="ReCart Logo"
+          width={40}
+          height={40}
+          className="opacity-90 transition-transform group-hover:scale-105"
+        />
+        <span className="text-3xl font-semibold text-[#5d6551] tracking-tight">
+          ReCart
+        </span>
       </Link>
 
-      <div>
+      {/* NAV LINKS + USER AREA */}
+      <div className="flex items-center gap-8">
+      
+      
+        <Link 
+  href="/browse"
+  className="text-[#5d6551] font-medium hover:text-[#3e4638] transition"
+>
+  Browse
+</Link>
+
+        {/* NEW NAV LINKS */}
+        <Link 
+          href="/impact" 
+          className="text-[#5d6551] font-medium hover:text-[#3e4638] transition"
+        >
+          Impact
+        </Link>
+
+        <Link 
+          href="/blog" 
+          className="text-[#5d6551] font-medium hover:text-[#3e4638] transition"
+        >
+          Blog
+        </Link>
+
+        {/* AUTH AREA */}
         {!user ? (
           <Link
             href="/login"
-            className="bg-[#d6d9d0] px-6 py-3 rounded-full text-[#5d6551] font-medium"
+            className="bg-[#d6d9d0] px-6 py-3 rounded-full text-[#5d6551] font-medium hover:bg-[#cfd2c8] transition"
           >
             Log in / Sign Up
           </Link>
         ) : (
-          /** FULLY STABLE HOVER DROPDOWN **/
           <div className="relative inline-block">
-            {/* HOVER AREA = avatar + dropdown */}
             <div className="group inline-block">
-              
+
               {/* Avatar */}
-              <div className="w-12 h-12 rounded-full bg-[#8b9275] text-white flex items-center justify-center cursor-pointer text-lg select-none">
+              <div className="w-12 h-12 rounded-full bg-[#8b9275] text-white flex items-center justify-center cursor-pointer text-lg select-none transition hover:brightness-110">
                 {user.user_metadata.fullname
                   ? user.user_metadata.fullname.charAt(0)
                   : "U"}
@@ -91,6 +127,7 @@ export default function Navbar() {
             </div>
           </div>
         )}
+
       </div>
     </nav>
   );
