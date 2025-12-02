@@ -1,20 +1,17 @@
 // app/api/search/route.js
 
-import { NextResponse } from "next/server";
-import {
-  getProductQueryFromUrl,
-  fallbackProductQueryFromUrl,
-} from "@/lib/productQueryFromUrl";
 import { googleSearch } from "@/lib/googleSearch";
+import {
+  fallbackProductQueryFromUrl,
+  getProductQueryFromUrl,
+} from "@/lib/productQueryFromUrl";
 import * as cheerio from "cheerio";
-// If you want to use ScraperAPI instead of direct fetch, you can import:
-// import { fetchHtmlThroughScraper } from "@/lib/scraperClient";
+import { NextResponse } from "next/server";
 
 const SECONDHAND_SITES = [
   { name: "Poshmark", domain: "poshmark.com" },
   { name: "eBay", domain: "ebay.com" },
   { name: "Depop", domain: "depop.com" },
-  // add more if you want: Vinted, Grailed, Mercari, etc.
 ];
 
 function isProbablyUrl(str) {
@@ -23,11 +20,10 @@ function isProbablyUrl(str) {
 
 function extractBrandFromUrl(url) {
   try {
-    const { hostname } = new URL(url); // e.g. "us.brandymelville.com"
+    const { hostname } = new URL(url);
     const parts = hostname.split(".");
     if (parts.length >= 2) {
-      const sld = parts[parts.length - 2]; // "brandymelville"
-      // make it prettier: "Brandy Melville"
+      const sld = parts[parts.length - 2];
       return sld
         .replace(/-/g, " ")
         .split(/\s+/)
@@ -40,11 +36,104 @@ function extractBrandFromUrl(url) {
   return null;
 }
 
+// 🆕 Extract sizes from text - accept 1-3 sizes only (not size charts)
+function extractSizes(text) {
+  const sizes = new Set(); // Use Set to avoid duplicates
+  const lower = text.toLowerCase();
+  
+  // Pattern 1: Explicit "size X" or "size: X"
+  const explicitSizes = lower.match(/\bsize\s*:?\s*(xx?s|xs|small|medium|m|large|l|xx?l|[0-9]{1,2}[wl]?|[0-9]x)\b/gi);
+  if (explicitSizes) {
+    explicitSizes.forEach(match => {
+      const sizeMatch = match.match(/(xx?s|xs|small|medium|m|large|l|xx?l|[0-9]{1,2}[wl]?|[0-9]x)$/i);
+      if (sizeMatch) {
+        const extracted = sizeMatch[1];
+        // Convert to letter size
+        const letterSize = convertToLetterSize(extracted);
+        if (letterSize) sizes.add(letterSize);
+      }
+    });
+  }
+  
+  // Pattern 2: Pipe format like "|25|" or "| S |"
+  const pipeMatches = text.match(/\|\s*([0-9]{1,2}[wl]?|xx?s|xs|s|m|l|xl|xx?l|[0-9]x)\s*\|/gi);
+  if (pipeMatches && pipeMatches.length <= 3) { // Only if not a size chart
+    pipeMatches.forEach(match => {
+      const sizeMatch = match.match(/\|\s*([^|]+)\s*\|/i);
+      if (sizeMatch) {
+        const letterSize = convertToLetterSize(sizeMatch[1].trim());
+        if (letterSize) sizes.add(letterSize);
+      }
+    });
+  }
+  
+  // Pattern 3: Standalone letter sizes at word boundaries (be careful here)
+  if (sizes.size === 0) {
+    const standaloneMatches = lower.match(/\b(xx?s|xs|small|medium|m|large|l|xx?l|[0-9]x)\b/gi);
+    if (standaloneMatches && standaloneMatches.length <= 3) {
+      standaloneMatches.forEach(match => {
+        const letterSize = convertToLetterSize(match);
+        if (letterSize) sizes.add(letterSize);
+      });
+    }
+  }
+  
+  const result = Array.from(sizes);
+  
+  // Only return if we found 1-3 sizes (not a size chart)
+  return result.length <= 3 ? result : [];
+}
 
-// 🔎 Helper: scrape the input URL to get the actual product name
+function convertToLetterSize(sizeStr) {
+  const cleaned = sizeStr.toLowerCase().trim().replace(/[wl]$/, '');
+  
+  // Already a letter size
+  if (/^(xx?s|xs|s|m|l|xl|xx?l|[0-9]x)$/i.test(cleaned)) {
+    let size = cleaned.toUpperCase()
+      .replace(/SMALL/i, "S")
+      .replace(/MEDIUM/i, "M")
+      .replace(/LARGE/i, "L");
+    
+    if (['XS', 'XXS', 'S', 'M', 'L', 'XL', 'XXL', '2X', '3X'].includes(size)) {
+      return size;
+    }
+  }
+  
+  // Numeric size - convert to letter
+  const num = parseInt(cleaned);
+  if (!isNaN(num)) {
+    // Dress sizes (0-20)
+    if (num >= 0 && num <= 2) return "XS";
+    if (num >= 4 && num <= 6) return "S";
+    if (num >= 8 && num <= 10) return "M";
+    if (num >= 12 && num <= 14) return "L";
+    if (num >= 16 && num <= 18) return "XL";
+    if (num >= 20 && num <= 22) return "2X";
+    // Jean waist sizes (23-36)
+    if (num >= 23 && num <= 25) return "XS";
+    if (num >= 26 && num <= 28) return "S";
+    if (num >= 29 && num <= 31) return "M";
+    if (num >= 32 && num <= 34) return "L";
+    if (num >= 35 && num <= 36) return "XL";
+  }
+  
+  return null;
+}
+
+// 🆕 Extract condition from text
+function extractCondition(text) {
+  const lower = text.toLowerCase();
+  
+  if (/new\s*with\s*tags?|\bnwt\b|brand\s*new|never\s*worn/i.test(lower)) return "New";
+  if (/like\s*new|excellent|pristine|mint/i.test(lower)) return "Like New";
+  if (/\bgood\b|gently\s*used|pre[-\s]?owned/i.test(lower)) return "Good";
+  if (/\bfair\b|some\s*wear|worn/i.test(lower)) return "Fair";
+  
+  return null;
+}
+
 async function getProductNameFromPage(url) {
   try {
-    // If you prefer ScraperAPI, swap this fetch for fetchHtmlThroughScraper(url, { render: false })
     const res = await fetch(url, {
       cache: "no-store",
       headers: {
@@ -64,9 +153,8 @@ async function getProductNameFromPage(url) {
 
     let name = null;
 
-    // 1) Try JSON-LD Product schema
     $('script[type="application/ld+json"]').each((_, el) => {
-      if (name) return; // already found
+      if (name) return;
       try {
         const jsonText = $(el).contents().text();
         if (!jsonText) return;
@@ -85,25 +173,18 @@ async function getProductNameFromPage(url) {
       }
     });
 
-    // 2) Fallback: og:title
     if (!name) {
       const ogTitle = $('meta[property="og:title"]').attr("content");
-      if (ogTitle) {
-        name = ogTitle.trim();
-      }
+      if (ogTitle) name = ogTitle.trim();
     }
 
-    // 3) Fallback: <title>
     if (!name) {
       const title = $("title").text();
-      if (title) {
-        name = title.trim();
-      }
+      if (title) name = title.trim();
     }
 
     if (!name) return null;
 
-    // Clean common patterns like "Product Name | Poshmark" or "Product Name - Depop"
     const cleaned = name
       .split("|")[0]
       .split("•")[0]
@@ -138,12 +219,51 @@ async function enrichListingFromPage(listing) {
 
     const html = await res.text();
     const $ = cheerio.load(html);
+    
+    // 🔧 Smart size extraction from page - look for "size" but ignore "size-chart"
+    let sizes = listing.sizes || [];
+    
+    if (sizes.length === 0) {
+      // Get page text but remove size chart sections
+      let pageText = $('body').text();
+      
+      // Remove common size chart sections
+      pageText = pageText.replace(/size\s*chart/gi, '');
+      pageText = pageText.replace(/size\s*guide/gi, '');
+      pageText = pageText.replace(/sizing\s*information/gi, '');
+      
+      // Look for "Size: X" or "Size X" pattern in the cleaned text
+      const sizeMatches = pageText.match(/\bsize\s*:?\s*(xx?s|xs|small|medium|m|large|l|xx?l|[0-9]{1,2}[wl]?|[0-9]x)\b/gi);
+      
+      if (sizeMatches && sizeMatches.length > 0) {
+        // Take only the first 1-2 matches to avoid getting chart data
+        const firstMatches = sizeMatches.slice(0, 2);
+        const extracted = [];
+        
+        firstMatches.forEach(match => {
+          const sizeMatch = match.match(/\bsize\s*:?\s*(xx?s|xs|small|medium|m|large|l|xx?l|[0-9]{1,2}[wl]?|[0-9]x)\b/i);
+          if (sizeMatch) {
+            const letterSize = convertToLetterSize(sizeMatch[1]);
+            if (letterSize && !extracted.includes(letterSize)) {
+              extracted.push(letterSize);
+            }
+          }
+        });
+        
+        if (extracted.length > 0 && extracted.length <= 3) {
+          sizes = extracted;
+          console.log(`✅ Found size on page for ${listing.link.substring(0, 50)}:`, sizes);
+        }
+      }
+    }
+
+    // Extract condition from page
+    const condition = extractCondition($('body').text());
 
     let image = listing.thumbnail || null;
     let price = listing.price || null;
     let isOutOfStock = false;
 
-    // Look for JSON-LD: <script type="application/ld+json"> { "@type": "Product", ... }
     $('script[type="application/ld+json"]').each((_, el) => {
       if (isOutOfStock) return false;
       try {
@@ -156,7 +276,6 @@ async function enrichListingFromPage(listing) {
         for (const obj of arr) {
           if (!obj) continue;
 
-          // --- 🔎 availability check (Out of Stock) ---
           const availability =
             obj?.offers?.availability ||
             obj?.offers?.itemAvailability ||
@@ -168,12 +287,10 @@ async function enrichListingFromPage(listing) {
             availability.toLowerCase().includes("outofstock")
           ) {
             isOutOfStock = true;
-            break; // break out of the for...of
+            break;
           }
 
-          // --- existing Product parsing ---
           if (obj["@type"] === "Product") {
-            // Image
             if (!image && obj.image) {
               if (Array.isArray(obj.image)) {
                 image = obj.image[0];
@@ -182,7 +299,6 @@ async function enrichListingFromPage(listing) {
               }
             }
 
-            // Price
             if (!price && obj.offers && obj.offers.price) {
               const p = obj.offers.price;
               const currency = obj.offers.priceCurrency || "";
@@ -207,6 +323,8 @@ async function enrichListingFromPage(listing) {
       ...listing,
       thumbnail: image || listing.thumbnail,
       price: price || listing.price,
+      sizes: sizes.length > 0 ? sizes : undefined,
+      condition: condition || listing.condition || undefined,
     };
   } catch (err) {
     console.error("enrichListingFromPage error:", listing.link, err);
@@ -228,8 +346,6 @@ export async function POST(req) {
     if (isProbablyUrl(query)) {
       console.log("🌐 Received URL query:", query);
 
-      // 🔥 NEW: try scraping the actual product name from the input URL
-
       const brandFromUrl = extractBrandFromUrl(query);
       const scrapedName = await getProductNameFromPage(query);
 
@@ -238,7 +354,7 @@ export async function POST(req) {
         searchPhrase = scrapedName;
         coreForMatching = scrapedName;
         searchPhrase = brandFromUrl
-          ? `${brandFromUrl} ${scrapedName}`          // "Brandy Melville Halie Top"
+          ? `${brandFromUrl} ${scrapedName}`
           : scrapedName;  
       } else {
         console.warn(
@@ -258,7 +374,6 @@ export async function POST(req) {
 
     console.log("🧵 final searchPhrase:", searchPhrase);
 
-    // 1) CALL GOOGLE FOR EACH SECONDHAND SITE → fill allResults
     const allResults = [];
 
     for (const site of SECONDHAND_SITES) {
@@ -268,19 +383,27 @@ export async function POST(req) {
       const items = await googleSearch(siteQuery);
 
       for (const item of items) {
+        // 🆕 Extract sizes from title MORE AGGRESSIVELY
+        const titleAndSnippet = `${item.title || ""} ${item.snippet || ""}`;
+        const quickSizes = extractSizes(titleAndSnippet);
+        const quickCondition = extractCondition(titleAndSnippet);
+        
+        console.log(`📦 Item: "${item.title?.substring(0, 60)}..." → Sizes: [${quickSizes.join(', ')}]`);
+        
         allResults.push({
           title: item.title,
           price: item.price,
           thumbnail: item.thumbnail,
           link: item.link,
           source: site.name,
+          sizes: quickSizes.length > 0 ? quickSizes : undefined,
+          condition: quickCondition || undefined,
         });
       }
     }
 
     console.log("🧺 total raw results:", allResults.length);
 
-    // 🔁 DEDUPE BY URL (normalize link)
     const seen = new Set();
     const dedupedResults = [];
 
@@ -296,7 +419,6 @@ export async function POST(req) {
 
     console.log("🧺 after dedupe:", dedupedResults.length);
 
-    // 2) Enrich only the top few results from their individual pages
     const MAX_ENRICH = dedupedResults.length;
     const toEnrich = dedupedResults.slice(0, MAX_ENRICH);
     const rest = dedupedResults.slice(MAX_ENRICH);
@@ -307,7 +429,6 @@ export async function POST(req) {
 
     const mergedResults = [...enrichedTop.filter(Boolean), ...rest];
 
-    // 3) Mark exact vs similar
     const coreTokens = coreForMatching
       .toLowerCase()
       .split(/\s+/)
@@ -316,7 +437,6 @@ export async function POST(req) {
     const products = mergedResults.map((p, index) => {
       const titleLower = (p.title || "").toLowerCase();
 
-      // you can tweak this later to "most tokens" instead of all
       const isExact =
         coreTokens.length > 0
           ? coreTokens.every((tok) => titleLower.includes(tok))
@@ -330,6 +450,8 @@ export async function POST(req) {
         link: p.link,
         source: p.source,
         exact: isExact,
+        sizes: p.sizes, // 🆕 Pass sizes to frontend
+        condition: p.condition, // 🆕 Pass condition to frontend
       };
     });
 
