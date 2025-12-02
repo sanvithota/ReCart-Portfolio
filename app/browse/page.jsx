@@ -27,18 +27,23 @@ export default function Browse() {
       title: item.title,
       image: item.thumbnail,
       platform: item.source,
-      // 🔧 DON'T set default size - use what API provides
       sizes: item.sizes || [],
-      quality: item.condition || null, // 🔧 No default condition either
+      quality: item.condition || null,
       price: parseFloat(priceString.replace(/,/g, "")) || 0,
       link: item.link,
       exact: item.exact ?? true,
     };
   });
 
+  // Calculate dynamic price range from actual products
+  const validPrices = items.map(i => i.price).filter(p => p > 0);
+  const minProductPrice = validPrices.length > 0 ? Math.min(...validPrices) : 5;
+  const maxProductPrice = validPrices.length > 0 ? Math.max(...validPrices) : 999;
+  const defaultMaxPrice = Math.ceil(maxProductPrice / 10) * 10;
+
   // Filter state
   const [selectedSizes, setSelectedSizes] = useState([]);
-  const [maxPrice, setMaxPrice] = useState(999);
+  const [maxPrice, setMaxPrice] = useState(defaultMaxPrice);
   const [selectedConditions, setSelectedConditions] = useState([]);
 
   // Filtering logic
@@ -56,32 +61,25 @@ export default function Browse() {
       return false;
     }
 
-    // Filter by size - ONLY if user has selected sizes
+    // Filter by size
     if (selectedSizes.length > 0) {
-      console.log('🔍 Filtering by sizes:', selectedSizes);
-      console.log('Item sizes:', item.sizes, 'Item title:', item.title);
-      
-      // If item has extracted sizes, check those
       if (item.sizes && item.sizes.length > 0) {
         const hasMatch = selectedSizes.some((selectedSize) =>
           item.sizes.includes(selectedSize)
         );
-        console.log('Has match?', hasMatch);
         if (!hasMatch) return false;
       } else {
-        // Fallback: check title for size keywords
         const hasMatch = selectedSizes.some((size) => {
           const sizePattern = new RegExp(`\\b${size}\\b`, 'i');
           return sizePattern.test(title);
         });
-        console.log('Title fallback match?', hasMatch);
         if (!hasMatch) return false;
       }
     }
 
-    // Filter by condition - ONLY if user has selected conditions
+    // Filter by condition
     if (selectedConditions.length > 0) {
-      if (!item.quality) return false; // No condition data, can't match
+      if (!item.quality) return false;
       if (!selectedConditions.includes(item.quality)) return false;
     }
 
@@ -125,8 +123,8 @@ export default function Browse() {
               </p>
               <input
                 type="range"
-                min="5"
-                max="999"
+                min={Math.floor(minProductPrice)}
+                max={Math.ceil(maxProductPrice)}
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(Number(e.target.value))}
                 className="mt-3 w-full"
@@ -146,25 +144,18 @@ export default function Browse() {
             </div>
 
             {/* Clear Filters */}
-            {(selectedSizes.length > 0 || selectedConditions.length > 0 || maxPrice !== 999) && (
+            {(selectedSizes.length > 0 || selectedConditions.length > 0 || maxPrice !== defaultMaxPrice) && (
               <button
                 onClick={() => {
                   setSelectedSizes([]);
                   setSelectedConditions([]);
-                  setMaxPrice(999);
+                  setMaxPrice(defaultMaxPrice);
                 }}
                 className="bg-[#d6d9d0] p-3 rounded-xl shadow-sm text-[#5d6551] font-semibold hover:bg-[#c8cbc2] transition"
               >
                 Clear All Filters
               </button>
             )}
-
-            {/* 🆕 Debug info - shows what sizes were found */}
-            <div className="bg-[#d6d9d0] p-3 rounded-xl shadow-sm text-xs text-[#5d6551]">
-              <p className="font-semibold mb-1">Debug Info:</p>
-              <p>{items.filter(i => i.sizes.length > 0).length} items have sizes</p>
-              <p>{items.filter(i => i.quality).length} items have condition</p>
-            </div>
           </div>
 
           {/* RIGHT CONTENT */}
@@ -172,16 +163,6 @@ export default function Browse() {
             {/* MAIN PRODUCT HEADER */}
             <div className="bg-[#d2b19c] px-6 py-5 rounded-xl shadow-sm mb-6">
               <div className="flex gap-5">
-                {items[0]?.image && (
-                  <img
-                    src={items[0].image}
-                    alt=""
-                    className="w-40 h-40 rounded-xl object-cover"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                    }}
-                  />
-                )}
                 <div>
                   <h3 className="text-xl font-semibold text-[#5d5148]">
                     {headerTitle}
