@@ -141,9 +141,11 @@ async function enrichListingFromPage(listing) {
 
     let image = listing.thumbnail || null;
     let price = listing.price || null;
+    let isOutOfStock = false;
 
     // Look for JSON-LD: <script type="application/ld+json"> { "@type": "Product", ... }
     $('script[type="application/ld+json"]').each((_, el) => {
+      if (isOutOfStock) return false;
       try {
         const jsonText = $(el).contents().text();
         if (!jsonText) return;
@@ -152,7 +154,25 @@ async function enrichListingFromPage(listing) {
         const arr = Array.isArray(parsed) ? parsed : [parsed];
 
         for (const obj of arr) {
-          if (obj && obj["@type"] === "Product") {
+          if (!obj) continue;
+
+          // --- 🔎 availability check (Out of Stock) ---
+          const availability =
+            obj?.offers?.availability ||
+            obj?.offers?.itemAvailability ||
+            obj?.availability ||
+            obj?.itemAvailability;
+
+          if (
+            typeof availability === "string" &&
+            availability.toLowerCase().includes("outofstock")
+          ) {
+            isOutOfStock = true;
+            break; // break out of the for...of
+          }
+
+          // --- existing Product parsing ---
+          if (obj["@type"] === "Product") {
             // Image
             if (!image && obj.image) {
               if (Array.isArray(obj.image)) {
@@ -178,6 +198,11 @@ async function enrichListingFromPage(listing) {
       }
     });
 
+    if (isOutOfStock) {
+      console.log("🚫 Skipping out-of-stock listing:", listing.link);
+      return null;
+    }
+    
     return {
       ...listing,
       thumbnail: image || listing.thumbnail,

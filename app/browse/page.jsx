@@ -68,7 +68,8 @@ export default function Browse() {
       {/* SEARCH BAR */}
       <div className="w-full bg-[#f7f4ed] py-10 px-4">
         <div className="max-w-[900px] mx-auto">
-           <URLInput />
+           <URLInput initialUrl={params.get("query") || ""} />
+           
         </div>
       </div>
 
