@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 import Navbar from "@/components/Navbar";
+import URLInput from "@/components/URLInput";
 import ProductCard from "@/components/ProductCard";
 import SectionHeader from "@/components/SectionHeader";
 import SizeFilter from "@/components/SizeFilter";
@@ -67,17 +68,7 @@ export default function Browse() {
       {/* SEARCH BAR */}
       <div className="w-full bg-[#f7f4ed] py-10 px-4">
         <div className="max-w-[900px] mx-auto">
-          <div className="flex bg-white rounded-full shadow-md overflow-hidden">
-            <div className="px-5 py-3 text-xl text-[#6c745f]">+</div>
-            <input
-              value={params.get("query") || ""}
-              readOnly
-              className="flex-1 px-2 py-3 outline-none text-lg text-[#4f584b]"
-            />
-            <button className="bg-[#8b9275] px-6 text-white text-2xl">
-              →
-            </button>
-          </div>
+           <URLInput />
         </div>
       </div>
 
