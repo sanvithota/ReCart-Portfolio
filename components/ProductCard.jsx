@@ -25,10 +25,8 @@ export default function ProductCard({ item }) {
         className="w-full h-48 object-cover rounded-lg"
       />
 
-      {/* Title color – change this if you want a different text color */}
       <h3 className="mt-2 font-semibold text-[#535c48]">{item.title}</h3>
 
-      {/* Price color – tweak here if you want */}
       <p className="text-[#5d6551]">${item.price}</p>
 
       {/* Site label from URL */}

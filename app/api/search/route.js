@@ -36,9 +36,8 @@ function extractBrandFromUrl(url) {
   return null;
 }
 
-// 🆕 Extract sizes from text - accept 1-3 sizes only (not size charts)
 function extractSizes(text) {
-  const sizes = new Set(); // Use Set to avoid duplicates
+  const sizes = new Set(); 
   const lower = text.toLowerCase();
   
   // Pattern 1: Explicit "size X" or "size: X"
@@ -80,14 +79,12 @@ function extractSizes(text) {
   
   const result = Array.from(sizes);
   
-  // Only return if we found 1-3 sizes (not a size chart)
   return result.length <= 3 ? result : [];
 }
 
 function convertToLetterSize(sizeStr) {
   const cleaned = sizeStr.toLowerCase().trim().replace(/[wl]$/, '');
   
-  // Already a letter size
   if (/^(xx?s|xs|s|m|l|xl|xx?l|[0-9]x)$/i.test(cleaned)) {
     let size = cleaned.toUpperCase()
       .replace(/SMALL/i, "S")
@@ -120,7 +117,6 @@ function convertToLetterSize(sizeStr) {
   return null;
 }
 
-// 🆕 Extract condition from text
 function extractCondition(text) {
   const lower = text.toLowerCase();
   
@@ -220,7 +216,6 @@ async function enrichListingFromPage(listing) {
     const html = await res.text();
     const $ = cheerio.load(html);
     
-    // 🔧 Smart size extraction from page - look for "size" but ignore "size-chart"
     let sizes = listing.sizes || [];
     
     if (sizes.length === 0) {
@@ -232,11 +227,9 @@ async function enrichListingFromPage(listing) {
       pageText = pageText.replace(/size\s*guide/gi, '');
       pageText = pageText.replace(/sizing\s*information/gi, '');
       
-      // Look for "Size: X" or "Size X" pattern in the cleaned text
       const sizeMatches = pageText.match(/\bsize\s*:?\s*(xx?s|xs|small|medium|m|large|l|xx?l|[0-9]{1,2}[wl]?|[0-9]x)\b/gi);
       
       if (sizeMatches && sizeMatches.length > 0) {
-        // Take only the first 1-2 matches to avoid getting chart data
         const firstMatches = sizeMatches.slice(0, 2);
         const extracted = [];
         
@@ -383,7 +376,6 @@ export async function POST(req) {
       const items = await googleSearch(siteQuery);
 
       for (const item of items) {
-        // 🆕 Extract sizes from title MORE AGGRESSIVELY
         const titleAndSnippet = `${item.title || ""} ${item.snippet || ""}`;
         const quickSizes = extractSizes(titleAndSnippet);
         const quickCondition = extractCondition(titleAndSnippet);
@@ -450,8 +442,8 @@ export async function POST(req) {
         link: p.link,
         source: p.source,
         exact: isExact,
-        sizes: p.sizes, // 🆕 Pass sizes to frontend
-        condition: p.condition, // 🆕 Pass condition to frontend
+        sizes: p.sizes, 
+        condition: p.condition, 
       };
     });
 

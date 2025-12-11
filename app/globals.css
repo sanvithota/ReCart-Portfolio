@@ -25,7 +25,7 @@ body {
   font-family: Nunito, sans-serif;
 }
 
-/* --- ANIMATIONS --- */
+
 @keyframes recart-fade-in {
   from {
     opacity: 0;
@@ -48,8 +48,7 @@ body {
   }
 }
 
-/* Put custom classes in the utilities layer so they
-   sit nicely next to Tailwind’s own utilities */
+
 @layer utilities {
   .animate-fade-in {
     animation: recart-fade-in 0.7s ease-out both;

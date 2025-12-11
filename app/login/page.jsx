@@ -44,7 +44,6 @@ export default function LoginPage() {
             Log in to continue shopping sustainably
           </p>
 
-          {/* FIXED FORM */}
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <input
               name="email"
